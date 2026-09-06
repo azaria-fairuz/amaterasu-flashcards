@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Flashcards</title>
+    <style>
+        body { font-family: sans-serif; max-width: 600px; margin: 40px auto; padding: 20px; text-align: center; }
+        .card { border: 2px solid #ccc; border-radius: 8px; padding: 40px; margin: 20px 0; font-size: 24px; min-height: 100px; display: flex; flex-direction: column; justify-content: center; align-items: center; background: #f9f9f9; cursor: pointer; }
+        .kanji { font-size: 64px; margin-bottom: 10px; }
+        .hidden { display: none; }
+        button { padding: 10px 20px; font-size: 16px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+    <h1>Flashcards</h1>
+
+    <div id="setup-section">
+        <input type="file" id="csvFile" accept=".csv">
+    </div>
+
+    <div id="quiz-section" class="hidden">
+        <div class="card" onclick="toggleAnswer()">
+            <div id="card-front" class="kanji"></div>
+            <div id="card-back" class="hidden">
+                <p id="card-romaji" style="margin: 5px 0; color: #556070;"></p>
+                <p id="card-english" style="margin: 5px 0; font-weight: bold;"></p>
+            </div>
+        </div>
+        <p id="counter" style="color: #666; font-size: 14px;"></p>
+        
+        <div>
+            <button id="action-btn" onclick="nextCard()">Next Card</button>
+            <button onclick="resetCSV()">Reset CSV</button>
+        </div>
+    </div>
+
+    <script>
+        let flashcards = [];
+        let currentIndex = 0;
+        let showAnswer = false;
+
+        document.getElementById('csvFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                const lines = text.replace(/\r/g, '').split('\n');
+                flashcards = [];
+
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+
+                    const parts = line.split(',');
+                    if (parts.length >= 3) {
+                        flashcards.push({
+                            kanji: parts[0].trim(),
+                            romaji: parts[1].trim(),
+                            english: parts.slice(2).join(',').trim()
+                        });
+                    }
+                }
+
+                if (flashcards.length > 0) {
+                    flashcards.sort(() => Math.random() - 0.5);
+                    currentIndex = 0;
+
+                    document.getElementById('setup-section').classList.add('hidden');
+                    document.getElementById('quiz-section').classList.remove('hidden');
+                    loadCard();
+                } else {
+                    alert('No cards found.');
+                }
+            };
+            reader.readAsText(file);
+        });
+
+        function loadCard() {
+            showAnswer = false;
+            const card = flashcards[currentIndex];
+            
+            document.getElementById('card-front').innerText = card.kanji;
+            document.getElementById('card-romaji').innerText = card.romaji;
+            document.getElementById('card-english').innerText = card.english;
+            
+            document.getElementById('card-front').classList.remove('hidden');
+            document.getElementById('card-back').classList.add('hidden');
+            
+            const btn = document.getElementById('action-btn');
+            if (currentIndex === flashcards.length - 1) {
+                btn.innerText = "Start Over";
+            } else {
+                btn.innerText = "Next Card";
+            }
+            
+            document.getElementById('counter').innerText = `Card ${currentIndex + 1} of ${flashcards.length} (Click card to flip)`;
+        }
+
+        function toggleAnswer() {
+            showAnswer = !showAnswer;
+            const front = document.getElementById('card-front');
+            const back = document.getElementById('card-back');
+
+            if (showAnswer) {
+                front.classList.add('hidden');
+                back.classList.remove('hidden');
+            } else {
+                front.classList.remove('hidden');
+                back.classList.add('hidden');
+            }
+        }
+
+        function nextCard() {
+            currentIndex++;
+            if (currentIndex >= flashcards.length) {
+                flashcards.sort(() => Math.random() - 0.5);
+                currentIndex = 0;
+            }
+            loadCard();
+        }
+
+        function resetCSV() {
+            // Clear input value so selecting the same file triggers change event again if needed
+            document.getElementById('csvFile').value = '';
+            flashcards = [];
+            currentIndex = 0;
+            
+            document.getElementById('quiz-section').classList.add('hidden');
+            document.getElementById('setup-section').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
